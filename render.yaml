@@ -7,7 +7,7 @@ services:
   - type: web
     name: poker-game
     runtime: python3
-    buildCommand: "./build.sh"
+    buildCommand: "chmod +x build.sh && ./build.sh"
     startCommand: "gunicorn poker_game.wsgi:application"
     envVars:
       - key: DATABASE_URL
@@ -18,3 +18,7 @@ services:
         generateValue: true
       - key: WEB_CONCURRENCY
         value: 4
+      - key: RENDER
+        value: true
+      - key: PYTHONUNBUFFERED
+        value: 1

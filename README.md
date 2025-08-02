@@ -18,34 +18,6 @@ Django製のリアルタイムテキサスホールデムポーカーゲーム�
 - **開発環境**: SQLite使用
 - **静的ファイル**: WhiteNoise使用
 
-## セットアップ
-
-1. 仮想環境をアクティベート:
-```bash
-.venv\Scripts\activate
-```
-
-2. 依存パッケージのインストール:
-```bash
-pip install django pillow
-```
-
-3. データベースマイグレーション:
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-4. 管理者ユーザー作成:
-```bash
-python manage.py createsuperuser
-```
-
-5. サーバー起動:
-```bash
-python manage.py runserver
-```
-
 ## 📋 使用方法
 
 ### オンライン版 
@@ -58,11 +30,35 @@ python manage.py runserver
 
 ### ローカル開発
 
-### AI機能 🤖
-- **一人でも遊べる**: AIプレイヤーを追加して1人でポーカーを楽しめます
-- **スマートなAI**: ハンド強度に基づいた戦略的な判断
-- **自動行動**: あなたのアクション後、AIが自動的に行動します
-- **複数AI対応**: 複数のAIプレイヤーと同時対戦可能
+1. 仮想環境をアクティベート:
+```bash
+.venv\Scripts\activate  # Windows
+source .venv/bin/activate  # macOS/Linux
+```
+
+2. 依存パッケージのインストール:
+```bash
+pip install -r requirements.txt
+```
+
+3. データベースマイグレーション:
+```bash
+python manage.py migrate
+```
+
+4. サーバー起動:
+```bash
+python manage.py runserver
+```
+
+5. ブラウザで `http://127.0.0.1:8000` にアクセス
+
+## 🤖 AI機能の特徴
+
+- **戦略的判断**: ハンド強度とポジションに基づく意思決定
+- **自動進行**: 人間プレイヤーのアクション後、AIが即座に行動
+- **複数AI対応**: 最大5人のAIプレイヤーと同時対戦
+- **リアルな行動**: フォールド、コール、レイズを適切に判断
 
 ## 🎮 ゲームルール
 
