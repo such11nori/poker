@@ -1,0 +1,73 @@
+{% extends 'poker/base.html' %}
+
+{% block title %}新規登録 - ポーカーゲーム{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">新規アカウント登録</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">ユーザー名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="username" name="username" required autofocus>
+                        <div class="form-text">英数字、アンダースコア、ハイフンが使用できます。</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">メールアドレス</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                        <div class="form-text">任意入力です。</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">パスワード <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="form-text">6文字以上で入力してください。</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password_confirm" class="form-label">パスワード（確認） <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">アカウントを作成</button>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <p>既にアカウントをお持ちの方</p>
+                    <a href="{% url 'login' %}" class="btn btn-outline-primary">ログイン</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">ホームに戻る</a>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// パスワード確認の一致チェック
+document.getElementById('password_confirm').addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = this.value;
+    
+    if (password !== confirmPassword) {
+        this.setCustomValidity('パスワードが一致しません');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

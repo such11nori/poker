@@ -1,0 +1,398 @@
+{% extends 'poker/base.html' %}
+
+{% block title %}{{ game.name }} - ポーカーゲーム{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">{{ game.name }}</h3>
+                <div>
+                    <span class="badge {% if game.status == 'waiting' %}bg-warning{% elif game.status == 'in_progress' %}bg-success{% else %}bg-secondary{% endif %} me-2">
+                        {% if game.status == 'waiting' %}待機中{% elif game.status == 'in_progress' %}進行中{% else %}終了{% endif %}
+                    </span>
+                    
+                    {% if game.status == 'waiting' %}
+                        {% if players.count >= 2 %}
+                            <a href="{% url 'start_game' game.id %}" class="btn btn-success btn-sm me-2">ゲーム開始</a>
+                        {% endif %}
+                        {% if players.count < game.max_players %}
+                            <a href="{% url 'add_ai_player' game.id %}" class="btn btn-outline-info btn-sm me-2">AI追加</a>
+                        {% endif %}
+                    {% endif %}
+                    
+                    {% if player %}
+                        {% if game.status == 'waiting' %}
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmLeaveGame()">ゲーム退出</button>
+                        {% elif game.status == 'in_progress' %}
+                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="confirmLeaveGameInProgress()">退出（ペナルティあり）</button>
+                        {% endif %}
+                    {% endif %}
+                    
+                    {% if game.created_by == user and game.status == 'in_progress' %}
+                        <button type="button" class="btn btn-outline-danger btn-sm ms-2" onclick="confirmEndGame()">ゲーム強制終了</button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>ポット:</strong> {{ game.pot }} チップ</p>
+                        <p><strong>ラウンド:</strong> {{ game.current_round }}</p>
+                        <p><strong>プレイヤー数:</strong> {{ players.count }}/{{ game.max_players }}</p>
+                        <p><strong>ブラインド:</strong> {{ game.small_blind }}/{{ game.big_blind }}</p>
+                        {% if game.created_by %}
+                            <p><strong>作成者:</strong> {{ game.created_by.username }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {% if current_round %}
+                            <p><strong>現在のフェーズ:</strong> 
+                                {% if current_round.phase == 'preflop' %}プリフロップ
+                                {% elif current_round.phase == 'flop' %}フロップ
+                                {% elif current_round.phase == 'turn' %}ターン
+                                {% elif current_round.phase == 'river' %}リバー
+                                {% elif current_round.phase == 'showdown' %}ショーダウン
+                                {% elif current_round.phase == 'finished' %}終了
+                                {% endif %}
+                            </p>
+                            <p><strong>コミュニティカード数:</strong> {{ current_round.get_community_cards|length }} 枚</p>
+                            {% if current_round.phase != 'showdown' and current_round.phase != 'finished' %}
+                                <p><strong>現在の番:</strong> 
+                                    {% for p in players %}
+                                        {% if p.position == current_round.current_player_position %}
+                                            {{ p.user.username }}
+                                            {% if p.is_ai %}<small class="text-muted">(AI)</small>{% endif %}
+                                            {% if p == player %}<span class="text-success">(あなた)</span>{% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </p>
+                                <p><strong>最高ベット額:</strong> {{ current_round.highest_bet }} チップ</p>
+                            {% endif %}
+                        {% endif %}
+                        {% if game.status == 'in_progress' %}
+                            <div class="alert alert-info">
+                                <small>
+                                    <strong>注意:</strong><br>
+                                    • 退出時はペナルティあり<br>
+                                    • 作成者は強制終了可能
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if game.status == 'in_progress' %}
+<div class="row">
+    <div class="col-12">
+        <!-- ポーカーテーブル -->
+        <div class="poker-table mx-auto mb-4" style="width: 600px; height: 400px;">
+            <!-- コミュニティカード -->
+            {% if current_round %}
+            <div class="community-cards">
+                {% for card in current_round.get_community_cards %}
+                <div class="playing-card">
+                    <div class="card-suit {{ card.suit }}">
+                        {{ card.rank }}
+                        {% if card.suit == 'hearts' %}♥
+                        {% elif card.suit == 'diamonds' %}♦
+                        {% elif card.suit == 'clubs' %}♣
+                        {% elif card.suit == 'spades' %}♠
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% if current_round.phase == 'preflop' %}
+                    <div class="text-white text-center">
+                        <p>コミュニティカードは<br>まだ配られていません</p>
+                    </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- プレイヤー位置 -->
+            {% for p in players %}
+            <div class="player-position" style="
+                {% if forloop.counter0 == 0 %}bottom: 10px; left: 50%; transform: translateX(-50%);
+                {% elif forloop.counter0 == 1 %}top: 50%; right: 10px; transform: translateY(-50%);
+                {% elif forloop.counter0 == 2 %}top: 10px; right: 30%; transform: translateX(50%);
+                {% elif forloop.counter0 == 3 %}top: 10px; left: 30%; transform: translateX(-50%);
+                {% elif forloop.counter0 == 4 %}top: 50%; left: 10px; transform: translateY(-50%);
+                {% elif forloop.counter0 == 5 %}bottom: 30px; left: 20%;
+                {% endif %}
+                width: 120px; min-height: 80px; padding: 8px; background: rgba(255,255,255,0.9); border-radius: 8px; border: 2px solid #333;
+            ">
+                <div class="text-center" style="font-size: 11px; line-height: 1.2;">
+                    <div style="font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ p.user.username }}
+                        {% if p.is_ai %}<small class="text-muted">(AI)</small>{% endif %}
+                    </div>
+                    {% if game.status == 'in_progress' %}
+                        <div style="margin-bottom: 2px;">
+                            {% if p.position == game.get_small_blind_position %}
+                                <small class="text-warning" style="font-weight: bold;">(SB)</small>
+                            {% elif p.position == game.get_big_blind_position %}
+                                <small class="text-danger" style="font-weight: bold;">(BB)</small>
+                            {% endif %}
+                            {% if p.position == current_round.current_player_position %}
+                                <small class="text-success" style="font-weight: bold;">(TURN)</small>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <div style="margin-bottom: 2px; color: #007bff; font-weight: bold;">{{ p.chips }}チップ</div>
+                    {% if p.current_bet > 0 %}
+                        <div style="margin-bottom: 2px; color: #28a745; font-weight: bold;">ベット:{{ p.current_bet }}</div>
+                    {% endif %}
+                    {% if p.is_folded %}
+                        <div style="color: #dc3545; font-weight: bold;">フォールド</div>
+                    {% elif not p.is_active %}
+                        <div style="color: #6c757d;">待機中</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- アクション履歴 -->
+{% if recent_actions %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">最近のアクション</h6>
+            </div>
+            <div class="card-body" style="max-height: 150px; overflow-y: auto;">
+                {% for action in recent_actions %}
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small>
+                        <strong>{{ action.player.user.username }}{% if action.player.is_ai %} (AI){% endif %}:</strong>
+                        {% if action.action == 'fold' %}フォールド
+                        {% elif action.action == 'check' %}チェック
+                        {% elif action.action == 'call' %}コール{% if action.amount > 0 %} ({{ action.amount }}){% endif %}
+                        {% elif action.action == 'raise' %}レイズ ({{ action.amount }})
+                        {% elif action.action == 'all_in' %}オールイン ({{ action.amount }})
+                        {% endif %}
+                    </small>
+                    <small class="text-muted">{{ action.timestamp|time:"H:i:s" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 自分の手札 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">あなたの手札</h5>
+            </div>
+            <div class="card-body text-center">
+                {% if player %}
+                <div class="d-flex justify-content-center gap-3 mb-3">
+                    {% for card in player.get_hand_cards %}
+                    <div class="playing-card hand-card">
+                        <div class="card-suit {{ card.suit }}" style="font-size: 1.5em;">
+                            {{ card.rank }}
+                            <br>
+                            {% if card.suit == 'hearts' %}♥
+                            {% elif card.suit == 'diamonds' %}♦
+                            {% elif card.suit == 'clubs' %}♣
+                            {% elif card.suit == 'spades' %}♠
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- アクションボタン -->
+                {% if player.is_active and not player.is_folded and game.status == 'in_progress' and current_round %}
+                    {% if player.position == current_round.current_player_position %}
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-danger" onclick="playerAction('fold')">フォールド</button>
+                            {% if current_round.highest_bet == player.current_bet %}
+                                <button type="button" class="btn btn-secondary" onclick="playerAction('check')">チェック</button>
+                            {% else %}
+                                <button type="button" class="btn btn-primary" onclick="playerAction('call')">
+                                    コール ({{ call_amount }})
+                                </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-success" onclick="showRaiseModal()">レイズ</button>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <small>他のプレイヤーの番です</small>
+                        </div>
+                    {% endif %}
+                {% elif player.is_folded %}
+                    <div class="alert alert-warning">
+                        <small>フォールドしました</small>
+                    </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- プレイヤーリスト -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">プレイヤー一覧</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>プレイヤー</th>
+                                <th>チップ</th>
+                                <th>現在のベット</th>
+                                <th>ステータス</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in players %}
+                            <tr {% if p.user == user %}class="table-info"{% endif %}>
+                                <td>
+                                    {{ p.user.username }}
+                                    {% if p.is_ai %}<span class="badge bg-secondary">AI</span>{% endif %}
+                                    {% if p.user == user %}<small>(あなた)</small>{% endif %}
+                                </td>
+                                <td>{{ p.chips }}</td>
+                                <td>{{ p.current_bet }}</td>
+                                <td>
+                                    {% if p.is_active %}
+                                        <span class="badge bg-success">アクティブ</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">フォールド</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- レイズモーダル -->
+<div class="modal fade" id="raiseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">レイズ金額を入力</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="raiseAmount" class="form-label">レイズ金額</label>
+                    <input type="number" class="form-control" id="raiseAmount" min="1" max="{{ player.chips }}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-success" onclick="playerRaise()">レイズ</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function playerAction(action) {
+    fetch(`{% url 'player_action' game.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            action: action,
+            amount: 0
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('エラーが発生しました: ' + data.error);
+        }
+    });
+}
+
+function showRaiseModal() {
+    const modal = new bootstrap.Modal(document.getElementById('raiseModal'));
+    modal.show();
+}
+
+function playerRaise() {
+    const amount = document.getElementById('raiseAmount').value;
+    if (!amount || amount <= 0) {
+        alert('有効な金額を入力してください');
+        return;
+    }
+    
+    fetch(`{% url 'player_action' game.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            action: 'raise',
+            amount: parseInt(amount)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('エラーが発生しました: ' + data.error);
+        }
+    });
+}
+
+function confirmLeaveGame() {
+    if (confirm('本当にゲームから退出しますか？')) {
+        window.location.href = '{% url "leave_game" game.id %}';
+    }
+}
+
+function confirmLeaveGameInProgress() {
+    if (confirm('ゲーム進行中の退出はペナルティ（チップの半分または100チップ）が課されます。\n本当に退出しますか？')) {
+        window.location.href = '{% url "leave_game" game.id %}';
+    }
+}
+
+function confirmEndGame() {
+    if (confirm('ゲームを強制終了しますか？\n※ペナルティ（チップの1/3または150チップ）が課され、残りのポットは他のプレイヤーに分配されます。')) {
+        window.location.href = '{% url "end_game" game.id %}';
+    }
+}
+
+// ページを定期的にリフレッシュ（他のプレイヤーのアクションを反映）
+{% if game.status == 'in_progress' %}
+setInterval(() => {
+    location.reload();
+}, 5000);
+{% endif %}
+</script>
+{% endblock %}

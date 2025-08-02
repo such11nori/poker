@@ -1,0 +1,95 @@
+{% extends 'poker/base.html' %}
+
+{% block title %}ホーム - ポーカーゲーム{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>進行中のゲーム</h2>
+        {% if games %}
+            <div class="row">
+                {% for game in games %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ game.name }}</h5>
+                            <p class="card-text">
+                                ステータス: 
+                                <span class="badge {% if game.status == 'waiting' %}bg-warning{% elif game.status == 'in_progress' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if game.status == 'waiting' %}待機中{% elif game.status == 'in_progress' %}進行中{% else %}終了{% endif %}
+                                </span>
+                            </p>
+                            <p class="card-text">
+                                プレイヤー数: {{ game.player_set.count }}/{{ game.max_players }}
+                            </p>
+                            <p class="card-text">
+                                ブラインド: {{ game.small_blind }}/{{ game.big_blind }}
+                            </p>
+                            <p class="card-text">
+                                <small class="text-muted">作成日時: {{ game.created_at|date:"Y/m/d H:i" }}</small>
+                            </p>
+                            {% if user.is_authenticated %}
+                                {% if game.id in user_games %}
+                                    <a href="{% url 'game_detail' game.id %}" class="btn btn-primary me-2">ゲームに入る</a>
+                                    {% if game.status == 'waiting' %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmLeaveGame({{ game.id }}, '{{ game.name }}')">退出</button>
+                                    {% endif %}
+                                {% else %}
+                                    {% if game.status == 'waiting' %}
+                                        <a href="{% url 'join_game' game.id %}" class="btn btn-primary">参加する</a>
+                                    {% endif %}
+                                    <a href="{% url 'game_detail' game.id %}" class="btn btn-outline-primary">詳細を見る</a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                現在進行中のゲームはありません。
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <h3>ゲームを作成</h3>
+        {% if user.is_authenticated %}
+            <div class="card">
+                <div class="card-body">
+                    <p>新しいポーカーゲームを作成して友達と遊びましょう！</p>
+                    <a href="{% url 'create_game' %}" class="btn btn-success btn-lg w-100">新しいゲームを作成</a>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                <h5>ログインが必要です</h5>
+                <p>ゲームに参加するにはログインしてください。</p>
+                <a href="{% url 'login' %}" class="btn btn-primary me-2">ログイン</a>
+                <a href="{% url 'register' %}" class="btn btn-outline-primary">新規登録</a>
+            </div>
+        {% endif %}
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">ゲームの遊び方</h5>
+                <ul>
+                    <li>各プレイヤーは1000チップから開始</li>
+                    <li>テキサスホールデムポーカーのルール</li>
+                    <li>2枚の手札と5枚のコミュニティカード</li>
+                    <li>最高の5枚の組み合わせで勝負</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmLeaveGame(gameId, gameName) {
+    if (confirm(`本当にゲーム「${gameName}」から退出しますか？`)) {
+        window.location.href = `/game/${gameId}/leave/`;
+    }
+}
+</script>
+{% endblock %}

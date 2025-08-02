@@ -1,0 +1,54 @@
+{% extends 'poker/base.html' %}
+
+{% block title %}ログイン - ポーカーゲーム{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">ログイン</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">ユーザー名</label>
+                        <input type="text" class="form-control" id="username" name="username" required autofocus>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">パスワード</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">ログイン</button>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <p>アカウントをお持ちでない方</p>
+                    <a href="{% url 'register' %}" class="btn btn-outline-success">新規登録</a>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <h6>テスト用アカウント</h6>
+                        <p class="mb-0">
+                            <strong>ユーザー名:</strong> admin<br>
+                            <strong>パスワード:</strong> admin123
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">ホームに戻る</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

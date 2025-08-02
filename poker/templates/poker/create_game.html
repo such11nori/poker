@@ -1,0 +1,68 @@
+{% extends 'poker/base.html' %}
+
+{% block title %}ゲーム作成 - ポーカーゲーム{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">新しいゲームを作成</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="game_name" class="form-label">ゲーム名</label>
+                        <input type="text" class="form-control" id="game_name" name="game_name" required maxlength="100">
+                        <div class="form-text">他のプレイヤーが識別できるゲーム名を入力してください。</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="max_players" class="form-label">最大プレイヤー数</label>
+                        <select class="form-select" id="max_players" name="max_players">
+                            <option value="2">2人</option>
+                            <option value="4">4人</option>
+                            <option value="6" selected>6人</option>
+                            <option value="8">8人</option>
+                            <option value="10">10人</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="small_blind" class="form-label">スモールブラインド</label>
+                                <input type="number" class="form-control" id="small_blind" name="small_blind" value="10" min="1" max="100" required>
+                                <div class="form-text">強制ベット額（小）</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="big_blind" class="form-label">ビッグブラインド</label>
+                                <input type="number" class="form-control" id="big_blind" name="big_blind" value="20" min="2" max="200" required>
+                                <div class="form-text">強制ベット額（大）</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6>ゲーム設定</h6>
+                        <ul class="mb-0">
+                            <li>各プレイヤーの初期チップ: 1000</li>
+                            <li>ゲームタイプ: テキサスホールデム</li>
+                            <li>最低参加人数: 2人</li>
+                            <li>ブラインド: 毎ラウンド強制ベット</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">ゲームを作成</button>
+                        <a href="{% url 'home' %}" class="btn btn-outline-secondary">キャンセル</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
